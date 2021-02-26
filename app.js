@@ -1,75 +1,93 @@
 const mongoose = require("mongoose");
-const CatModel = require("./models/Cat");
+const DishModel = require("./models/Dish");
+const CompanyModel = require("./models/Company");
 
 async function init() {
   try {
     const connection = await mongoose.connect(
-      "mongodb://localhost:27017/exampleApp",
+      "mongodb://localhost:27017/companiesDB",
       {
-        useCreateIndex: true,
         useNewUrlParser: true,
         useUnifiedTopology: true,
+        useFindAndModify: false,
+        useCreateIndex: true,
       }
     );
 
-    console.log(
-      `Connected to Mongo! Database name: "${connection.connections[0].name}"`
-    );
+    console.log("Sucessfully connected", connection.connections[0].name);
 
-    // const Sukiy = await CatModel.create({
-    //   name: "Batata",
-    //   age: 15,
-    //   color: "Blue",
-    //   breed: "MBC",
-    //   livesNumber: 7,
-    //   gloves: false,
-    // });
+    const result = await CompanyModel.find(
+      {
+        number_of_employees: { $lt: 1000 },
+        founded_year: { $gt: 2005 },
+      },
+      { _id: 0, name: 1, founded_year: 1, number_of_employees: 1 }
+    )
+      .sort({ number_of_employees: 1 })
+      .limit(10);
 
-    // console.log("Created a new cat: ", Sukiy);
+    console.log(result);
 
-    const cats = await CatModel.find();
-    console.log("All the cats: ", cats);
-
-    const amora = await CatModel.findOne({ name: "Amora" });
-    console.log("A specific cat: ", amora);
-
-    // findOneAndUpdate()
-    const olderAmora = await CatModel.updateOne(
-      { name: "Amora" },
-      { $set: { age: 3 } }
-    );
-    console.log("An updated cat: ", olderAmora);
-
-    const deleted = await CatModel.deleteOne({
-      _id: "5fc92a80a008561850d43560",
+    // Criar um novo prato
+    const newDish = await DishModel.create({
+      name: "Parmegiana",
+      ingredients: ["Filet", "Tomato sauce", "Cheese", "Breading", "Basil"],
+      prepTime: 40,
+      cuisine: "Italian",
+      glutenFree: false,
+      lactoseFree: false,
+      vegan: false,
+      servings: 2,
+      mealType: "Main Course",
     });
-    console.log("Deleted cat: ", deleted);
+
+    console.log(newDish);
+
+    // Busca todos os documentos da collection
+
+    const allDishes = await DishModel.find();
+
+    console.log(allDishes);
+
+    const updatedDish = await DishModel.updateOne(
+      { _id: "603917a7c989d4281c5bb829" },
+      { $set: { calories: 700 } }
+    );
+
+    console.log(updatedDish);
+
+    const updatedDish2 = await DishModel.updateOne(
+      { _id: "603917a7c989d4281c5bb829" },
+      { $push: { ingredients: "Oregano" } }
+    );
+
+    const updatedAll = await DishModel.updateMany(
+      { ingredients: "Chicken" },
+      { $set: { "ingredients.$": "Filet" } }
+    );
+
+    console.log(updatedAll);
+
+    const deleted = await DishModel.deleteOne({
+      _id: "603917a7c989d4281c5bb829",
+    });
+
+    console.log(deleted);
+
+    const deletedMany = await DishModel.deleteMany({ name: "Parmegiana" });
+
+    console.log(deletedMany);
+
+    const updated = await DishModel.findOneAndUpdate(
+      { name: "Parmegiana" },
+      { $set: { prepTime: 80 } },
+      { new: true }
+    );
+
+    console.log(updated);
   } catch (err) {
-    console.log("Error", err);
+    console.error("Failed to connect to DB", err);
   }
 }
+
 init();
-
-// mongoose
-//   .connect("mongodb://localhost:27017/exampleApp", {
-//     useCreateIndex: true,
-//     useNewUrlParser: true,
-//     useUnifiedTopology: true,
-//   })
-//   .then((connection) => {
-//     console.log(
-//       `Connected to Mongo! Database name: "${connection.connections[0].name}"`
-//     );
-
-//     const Sukiy = CatModel.create({
-//       name: "Sukiy",
-//       age: 3,
-//       color: "Black and White",
-//       breed: "MBC",
-//       livesNumber: 7,
-//       gloves: true,
-//     })
-//       .then((result) => console.log("Created cat: ", result))
-//       .catch((err) => console.log(err));
-//   })
-//   .catch((err) => console.error("Error connecting to mongo", err));
